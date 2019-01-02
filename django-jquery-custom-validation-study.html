@@ -1,0 +1,470 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page-title %}Add Personalised Order {% endblock %}
+{% block person-active %}active{% endblock %}
+{% block add-pending-active %}active{% endblock %}
+
+{% load static %}
+
+{% block stylesheets %}
+    <link href="{% static 'plugins/bootstrap-tagsinput/dist/bootstrap-tagsinput.css' %}" rel="stylesheet"/>
+    <link href="{% static 'plugins/multiselect/css/multi-select.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'plugins/select2/dist/css/select2.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'plugins/select2/dist/css/select2-bootstrap.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.css' %}"
+          rel="stylesheet"/>
+    <link href="{% static 'plugins/switchery/switchery.min.css' %}" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'plugins/timepicker/bootstrap-timepicker.min.css' %}">
+    <link href="{% static 'plugins/mjolnic-bootstrap-colorpicker/dist/css/bootstrap-colorpicker.min.css' %}"
+          rel="stylesheet">
+    <link href="{% static 'plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css' %}"
+          rel="stylesheet">
+    <link href="{% static 'plugins/bootstrap-daterangepicker/daterangepicker.css' %}" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    <style>
+        .content {
+            margin-top: 20px !important;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        p {
+            margin-bottom: 0px;
+            font-size: 12px;
+        }
+    </style>
+    <div class="row" style="overflow: scroll;height: 80vh;">
+        <div class="col-md-3"></div>
+        <div class="col-lg-6" style="margin-top: 10px">
+
+            <div class="card-box">
+
+
+                <h4 class="header-title m-t-0 m-b-30">Edit Personalised Order</h4>
+
+                {% if messages %}
+                    <div>
+                        {% for message in messages %}
+                            <span{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data" novalidate
+                      action="{% url 'dashboard:personalised-update' pk=object.id %}" id="formdata">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{ object.id }}" name="id"/>
+                    <div class="form-group">
+                        <span class="all text-danger"></span>
+                        <label for="name">Name*</label>
+                        <span class="name text-danger"></span>
+                        <input type="text" name="cakename"  value="{{ object.name }}" required
+                               placeholder="Enter customer name" class="form-control clear" id="name">
+                    </div>
+                    <div class="form-group">
+
+                        <label for="email"> Email*</label>
+                        <span class="email1 text-danger"></span>
+                        <input type="email" name="email1" parsley-trigger="change"
+                               value="{{ object.email }}" placeholder="Enter customer email"
+                               class="form-control email clear" id="email" required>
+
+                    </div>
+                    <div class="form-group">
+
+                        <label for="phone"> Phone Number*</label>
+                        <span class="phone1 text-danger"></span>
+                        <input type="text" name="phone" parsley-trigger="change" value="{{ object.phone_no }}" required
+                               placeholder="Enter Phone Number" class="form-control phone clear" id="phone">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="location">Location*</label>
+                        <span class="location1 text-danger"></span>
+                        <input type="text" name="location" parsley-trigger="change" value={{ object.location }} required
+                               placeholder="Enter customer location" class="form-control clear" id="location">
+
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="datepicker2-autoclose">Date Required For*</label>
+                        <span class="date1 text-danger"></span>
+                        <input type="text" id="datepicker-new" autocomplete="off"
+                               value="{{ object.delivery_date|date:"Y-m-d" }}"
+                               class="form-control date clear" name="datepicker" required>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="timepicker2-autoclose">Time Required For*</label>
+
+                        <input type="text" id="timepicker-new" autocomplete="off"
+                               value="{{ object.delivery_time|date:"g:i a"  }}"
+                               class="form-control clear"
+                               value=""
+                               name="timepicker" required>
+
+                    </div>
+
+                    <label for="emailAddress">Description*</label>
+                    <span class="descri"></span>
+                    <div id="editor" class="form-group clear" style="height: 350px;">
+                    </div>
+                    <input id="body" name="body" type="hidden" value={{ object.description }} class="clear"/>
+
+                    {% if user.is_superuser %}
+                        <div class="form-group">
+
+                            <label for="baker">Baker*</label>
+                            <span class="baker1 text-danger"></span>
+                            <select name="vendor" required id="baker" class="form-control">
+                                <option value="">Select Baker</option>
+                                {% for vendor in vendors %}
+                                    <option value="{{ vendor.user }}"
+                                            {% if object.baker == vendor.user.email %}selected{% endif %}>{{ vendor.user.first_name }}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+                        <div class="form-group">
+
+                            <label for="baker">Status*</label>
+                            <span class="status1 text-danger"></span>
+                            <select name="status" required id="baker" class="form-control">
+                                <option value="">Select Status</option>
+                                <option value="Pending" {% if object.status == "Pending" %}selected{% endif %}>Pending
+                                </option>
+                                <option value="On Its Way" {% if object.status == "On Its Way" %}selected{% endif %}>On
+                                    Its Way
+                                </option>
+                                <option value="Delivered" {% if object.status == "Delivered" %}selected{% endif %}>
+                                    Delivered
+                                </option>
+                            </select>
+
+                        </div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="emailAddress">Comments to Baker</label>
+                        <textarea name="other_info"
+                                  placeholder="Enter comments, if any to the baker" class="form-control clear"
+                                  id="emailAddress">{% if object.comment %}{{ object.comment }}{% endif %}</textarea>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="fileInpt"> Sample Images (Resolution 400x400)</label>
+                        {% if object.images %}<p style="color:black;"><u>Image</u> <a
+                                href="{{ object.images.url }}">{{ object.images.url }}</a></p>{% endif %}
+                        <input id="fileInpt" class="ff" name="file1" type="file"
+                                {% if x.images %}  value="{{ object.images.url }}"{% endif %}/>
+
+                        <div class="form-group text-right m-b-0">
+                            <button class="btn btn-primary waves-effect waves-light" id="other" type="submit">
+                                Submit
+                            </button>
+                        </div>
+
+
+                </form>
+
+
+            </div>
+
+
+        </div>
+    </div>
+
+
+{% endblock %}
+
+{% block extra-scripts %}
+    <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
+    <script type="text/javascript" src={% static "plugins/parsleyjs/dist/parsley.min.js" %}></script>
+    <script src="{% static 'plugins/switchery/switchery.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'plugins/multiselect/js/jquery.multi-select.js' %}"></script>
+    <script type="text/javascript"
+            src="{% static 'plugins/jquery-quicksearch/jquery.quicksearch.js' %}"></script>
+    <script src="{% static 'plugins/select2/dist/js/select2.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js' %}"
+            type="text/javascript"></script>
+    <script src="{% static 'plugins/bootstrap-inputmask/bootstrap-inputmask.min.js' %}"
+            type="text/javascript"></script>
+    <script src="{% static 'plugins/moment/moment.js' %}"></script>
+    <script src="{% static 'plugins/timepicker/bootstrap-timepicker.min.js' %}"></script>
+    <script src="{% static 'plugins/mjolnic-bootstrap-colorpicker/dist/js/bootstrap-colorpicker.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-daterangepicker/daterangepicker.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-maxlength/bootstrap-maxlength.min.js' %}" type="text/javascript"></script>
+    <!-- Include the Quill library -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <!-- Initialize Quill editor -->
+    <script>
+        var quill = new Quill('#editor', {
+            theme: 'snow'
+        });
+        $(document).ready(function () {
+            $('#formdata').submit(function (event) {
+                //event.preventDefault();
+                var text = quill.getText();
+                text = text.trim();
+                //      console.log(text);
+                $("input[name='body']").val(text);
+            });
+            var text = $("input[name='body']").val();
+            quill.setText(text);
+        });
+    </script>
+    <script>
+
+        descriptionContent = document.getElementsByClassName('body');
+        function getcontent() {
+            var text = quill.getText();
+            descriptionContent.innerHTML = text;
+            //console.log(text);
+            return text;
+        }
+    </script>
+    <script>
+        jQuery(document).ready(function () {
+
+
+            // Date Picker
+            jQuery('#datepicker-new').datepicker();
+            jQuery('#datepicker-autoclose').datepicker({
+                autoclose: true,
+                todayHighlight: true
+            });
+            jQuery('#datepicker-inline').datepicker();
+            jQuery('#datepicker-multiple-date').datepicker({
+                format: "yyyy-mm-dd",
+                clearBtn: true,
+                multidate: true,
+                multidateSeparator: ","
+            });
+            jQuery('#date-range').datepicker({
+                toggleActive: true
+            });
+
+            $('#timepicker-new').timepicker();
+        });
+
+    </script>
+    <script>
+        $(document).ready(function () {
+            $(".select").select2();
+            $("#category").select2();
+        });
+
+        var date = new Date();
+        date.setDate(date.getDate());
+
+        //setting date for delivery
+        $('#datepicker-new').datepicker({
+            format: 'yyyy-mm-dd',
+            startDate: date,
+            "autoclose": true
+        });
+    </script>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var subform = $("#formdata");
+
+            function trimNumber(s) {
+                while (s.substr(0, 1) == '0' && s.length > 1) {
+                    s = s.substr(1, 9999);
+                }
+                return s;
+            }
+
+            $("#phone").focusout(function () {
+                var phone1 = $('.phone').val();
+                phone = String(phone1);
+                trimphone = trimNumber(phone1);
+                len = phone.length;
+                len = parseInt(len);
+                if (len < 9 || len > 12 || trimphone.length < 9) {
+                    console.log(len);
+                    $('.phone1').html('<p>Enter a valid mobile number(9-12 digits)</p>');
+                    //$('#phone').focus();
+                    //return false;
+                }
+            });
+
+            $("#phone").keyup(function () {
+                var phone1 = $('.phone').val();
+                phone = String(phone1);
+                trimphone = trimNumber(phone1);
+                len = phone.length;
+                console.log(len);
+                if (len >= 9 || len <= 12 || trimphone.length < 9) {
+                    $('.phone1').html('');
+
+                }
+
+            });
+            //---------------------------------------------------------------------
+            $("#email").focusout(function () {
+                var email = $('.email').val();
+                email = String(email);
+                console.log(email);
+                if (!(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))) {
+                    $(".email1").html("<p>Enter a valid email</p>")
+                    //$("#email").focus();
+                }
+
+            });
+
+            $("#email").keyup(function () {
+                var email = $('.email').val();
+                email = String(email);
+                if (!(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))) {
+                    $(".email1").html("")
+                    $("#email").focus();
+                }
+
+            });
+
+
+            $("#name").keyup(function () {
+                $('.name').html('');
+                $(".all").html('');
+            });
+
+            $("#baker").change(function () {
+                $(".baker1").html('');
+            });
+
+            $("#status").change(function () {
+                $(".status1").html('');
+            });
+
+
+            subform.submit(function (event) {
+                    debugger;
+                    event.preventDefault();
+                    var thisForm = $(this);
+                    var action = thisForm.attr("action");
+                    var formMethod = thisForm.attr("method");
+                    var form = $('form')[0]; // You need to use standard javascript object here
+                    var formData = new FormData(form);
+                    formData.append('images', $('input[type=file]')[0].files[0]);
+                    console.log(formData);
+                    var body = $("input[name='body']").val();
+                    var baker = $("#baker").val();
+                    var status = $("#status").val();
+                    var name = $("#name").val();
+
+                    var email = $("#email").val();
+                    var phone = $("#phone").val();
+                    var location = $("#location").val();
+                    if (name == "" && email == "" && phone == "" && location == "") {
+                        $(".all").html("<p>Enter all mandatory fields</p>");
+                        $(".phone1").html('');
+                        $(".email1").html('');
+                        $("#name").focus();
+                    }
+                    else if (name == "") {
+                        $(".name").html('<p>Enter Name</p>')
+                        $("#name").focus();
+
+                    }
+                    else if (body == "") {
+                        quill.focus();
+                        $('.descri').html('<p class="text-danger">You must add description</p>')
+                    }
+                    else if (baker == "") {
+                        $(".baker1").html('<p>Select a baker</p>');
+                        $("#baker").focus();
+                    }
+                    else if (status == "") {
+                        $(".status1").html('<p>Select a status</p>');
+                        $("#status").focus();
+                    }
+                    else {
+                        $.ajax({
+                            url: action,
+                            method: formMethod,
+                            type: 'POST',
+                            contentType: false, // NEEDED, DON'T OMIT THIS (requires jQuery 1.6+)
+                            processData: false,
+                            data: formData,
+                            success: function (data) {
+
+                                var email = $('.email1');
+                                var phone = $('.phone1');
+                                var date = $('.date1');
+
+                                if (data.message1 == "Enter a Valid Email") {
+                                    var sub = thisForm.find('.email1');
+                                    sub.html('<p>Enter a Valid Email</p>');
+                                    $('.email').focus();
+                                }
+
+                                else if (data.message2 == "Number must be b/w 9 and 12 digits") {
+                                    email.html('');
+                                    var sub = thisForm.find('.phone1');
+                                    sub.html('<p>Enter a valid mobile number(9-12 digits)</p>');
+                                    $('.phone').focus();
+
+                                }
+
+                                else if (data.message3 == "Please enter the delivery date") {
+                                    phone.html('');
+                                    var sub = thisForm.find('.date1');
+                                    sub.html('<p>Please enter the delivery date</p>');
+                                    $('.date').focus();
+
+                                }
+                                else if (data.message4 == "Contact Number must be a number!") {
+                                    phone.html('');
+                                    var sub = thisForm.find('.phone1');
+                                    sub.html('<p>Contact Number must be a number!</p>');
+                                    $('.phone').focus();
+
+                                }
+                                else if (data.message == "Success") {
+                                    window.location.href = "/dashboard/personalised/all/"
+
+                                }
+                            },
+
+                            error: function (errorData) {
+
+                                console.log(errorData);
+
+                            }
+
+                        });
+                    }
+                });
+        });
+
+
+    </script>
+
+{% endblock %}
